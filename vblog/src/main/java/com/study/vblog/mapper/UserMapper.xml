@@ -37,7 +37,7 @@
         <result column="email" property="email"/>
         <result column="userface" property="userface"/>
         <result column="regTime" property="regTime"/>
-        <collection property="roles" ofType="org.sang.bean.Role">
+        <collection property="roles" ofType="com.study.vblog.bean.Role">
             <id column="rid" property="id"/>
             <result column="rname" property="name"/>
         </collection>

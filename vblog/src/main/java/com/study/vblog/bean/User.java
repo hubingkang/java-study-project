@@ -9,7 +9,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class User implements UserDetails {
     private Long id;
     private String username;

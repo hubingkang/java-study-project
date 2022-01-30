@@ -1,6 +1,11 @@
 package com.example.demo.config;
 
+import com.example.demo.filter.LoginFilter;
+import com.example.demo.filter.UserAuthFilter;
+import com.example.demo.handler.LoginUnAuthHandler;
 import com.example.demo.handler.TokenLogoutHandler;
+import com.example.demo.handler.UnauthEntryPoint;
+import com.example.demo.utils.TokenManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,6 +27,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private TokenManager tokenManager;
 
     // 自定义登录用户名和密码加密方式
     @Override
@@ -51,9 +59,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers("/admin/createAdmin").hasAnyRole("boss,shareholder") //需要角色才能访问
 //                    .antMatchers("/admin/createAdmin").hasRole("boss") //需要角色才能访问
                 .anyRequest().authenticated()                                   //其他请求需要认证
-                .and().csrf().disable();                                         //关闭CSRF
+                .and().csrf().disable()                                         //关闭CSRF
+//                .exceptionHandling().accessDeniedPage("/noAuth")                //没有权限跳转的错误提示页(匿名+认证)
+                .exceptionHandling().authenticationEntryPoint(new UnauthEntryPoint()) //匿名用户没有权限处理器
+                .accessDeniedHandler(new LoginUnAuthHandler(tokenManager))          //认证用户没有权限处理器
+                .and()
+                .addFilter(new LoginFilter(authenticationManager(), tokenManager, redisTemplate))                       //自定义认证过滤器
+                .addFilter(new UserAuthFilter(authenticationManager(), tokenManager, redisTemplate)).httpBasic();       //自定义授权过滤器
 
-        getHttp().exceptionHandling().accessDeniedPage("/noAuth");       //没有权限跳转的错误提示页面路径
+//        getHttp().exceptionHandling().accessDeniedPage("/noAuth");       //没有权限跳转的错误提示页面路径
 
         getHttp().logout().logoutUrl("/loginout")
                 .addLogoutHandler(new TokenLogoutHandler(redisTemplate)) //指定退出处理器

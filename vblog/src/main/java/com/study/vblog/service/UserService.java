@@ -5,14 +5,18 @@ import com.study.vblog.bean.User;
 import com.study.vblog.mapper.RolesMapper;
 import com.study.vblog.mapper.UserMapper;
 import com.study.vblog.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
+@Service
 public class UserService implements UserDetailsService {
     @Autowired
     UserMapper userMapper;
@@ -25,18 +29,26 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // 从数据库中查询出用户
         User user = userMapper.loadUserByUsername(username);
 
+        // 若没查询到一定要抛出该异常，这样才能被Spring Security的错误处理器处理
         if (user == null) {
             //避免返回null，这里返回一个不含有任何值的User对象，在后期的密码比对过程中一样会验证失败
-            return new User();
+//            return new User();
+            throw new UsernameNotFoundException("用户名不存在，登陆失败。");
         }
 
         //查询用户的角色信息，并返回存入user中
         List<Role> roles = rolesMapper.getRolesByUid(user.getId());
+        /*自定义用户登录验证Filter需要返回string的权限list*/
+//        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        log.info("密码Encode: {}", user.getPassword());
         user.setRoles(roles);
         return user;
     }
+
+//    public User login()
 
     /**
      * @param user
@@ -44,7 +56,7 @@ public class UserService implements UserDetailsService {
      * 1表示用户名重复
      * 2表示失败
      */
-    public int reg(User user) {
+    public int register(User user) {
         User loadUserByUsername = userMapper.loadUserByUsername(user.getUsername());
         if (loadUserByUsername != null) {
             return 1;
